@@ -1,3 +1,8 @@
+<p align="center">
+  <a href="https://lianxin.quarkblockchain.cn/app-download">
+    <img width="100" src="./unpackage/res/icons/144x144.png">
+  </a>
+</p>
 <h1 align="center">QKBill</h1>
 
 <div align="center">
@@ -5,12 +10,13 @@
 使用混合技术开发的去中心化钱包。
 
 支持 QuarkBlockChain, ETH 上的所有加密资产。
+</div>
+
+--------
 
 [English](./README.md) | [简体中文](./README-zh_CN.md)
 
-</div>
 
-------
 
 ## ✨主要功能
 
