@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://lianxin.quarkblockchain.cn/app-download">
+  <a href="https://github.com/chain-chat-org/QkBill/releases">
     <img width="100" src="./unpackage/res/icons/144x144.png">
   </a>
 </p>
