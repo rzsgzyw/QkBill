@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../css/mui.min.css">
+		<link rel="stylesheet" href="../css/app.css">
+		<link rel="stylesheet" href="../fonts/iconfont.css">
+	</head>
+	<body>
+		
+		<header class="mui-bar mui-bar-nav app-header-1" id="header">
+			<a class="mui-icon icon iconfont icon-add  mui-pull-right" id="add-contacts-btn"></a>
+		</header>
+		
+		<div class="mui-content" id="content" v-cloak>
+		
+			<div class="title-bar">
+				<span class="mui-pull-left title">联系人</span>
+			</div>
+			
+			<div class="no-data-tip" id="no-data-tip" style="display: none;">
+				<span class="mui-icon icon iconfont icon-group"></span>
+				<p>暂无联系人</p>
+			</div>
+			
+			<div class="contacts-list">
+				
+				<div class="item" v-on:tap="tapContacts(item.address)" v-for="item in contacts">
+					<div class="contacts-head mui-pull-left">
+						{{item.head.toUpperCase()}}
+					</div>
+					<div class="contacts-info mui-pull-left">
+						<p class="name">
+							{{item.username}}
+						</p>
+						<p class="address">
+							{{item.address.substr(0,15)}}...{{item.address.substr(27,15)}}
+						</p>
+					</div>
+				</div>
+				
+			</div>
+			
+		</div>
+		
+	</body>
+	<script src="../js/mui.min.js"></script>
+	<script src="../js/immersed.js"></script>
+	<script src="../js/h.min.js"></script>
+	<script src="../js/vue.min.js"></script>
+	<script src="../js/app.js"></script>
+	
+	<script>
+		mui.init({
+			swipeBack:true //启用右滑关闭功能
+		});
+		
+		var contacts = [];
+		
+		
+		mui.plusReady(function() {
+			
+			contacts = getContacts();
+			if(contacts.length < 1)
+			{
+				document.getElementById("no-data-tip").style.display = "block";
+			}
+			else
+			{
+				document.getElementById("no-data-tip").style.display = "none";
+			}
+			
+			vm = new Vue({
+				el: '#content',
+				data: {
+					contacts:contacts
+				},
+				methods: {
+					
+					tapContacts: function (address) {
+						mui.openWindow({
+							url: "contacts/contacts-inner.html",
+							id: "contacts-inner.html",
+							extras:{
+								address:address
+							},
+							show:{
+								autoShow:true,
+								aniShow:'slide-in-right',
+							},
+							waiting:{
+								autoShow:false,
+							}
+						});
+					},
+				}
+			});
+			
+		})
+		
+		h("#add-contacts-btn").tap(function(){
+			
+			mui.openWindow({
+				url: "contacts/add-contacts.html",
+				id: "add-contacts.html",
+				show:{
+					autoShow:true,
+					aniShow:'slide-in-right',
+				},
+				waiting:{
+					autoShow:false,
+				}
+			});
+			
+		});
+		
+		document.addEventListener('fresh-contacts', function() {
+			
+			var contacts = getContacts();
+			if(contacts.length < 1)
+			{
+				document.getElementById("no-data-tip").style.display = "block";
+			}
+			else
+			{
+				document.getElementById("no-data-tip").style.display = "none";
+			}
+			vm.contacts = contacts;
+			
+		});
+		
+	</script>
+</html>

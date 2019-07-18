@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="MobileOptimized" content="320"/>
+    <link href="../../../css/mui.min.css" rel="stylesheet"/>
+    <link href="../../../css/app.css" rel="stylesheet"/>
+    <link href="../../../fonts/iconfont.css" rel="stylesheet"/>
+	<script type="text/javascript">
+		var ws=null,wo=null;
+		var scan=null,domready=false;
+		// H5 plus事件处理
+		function plusReady(){
+			if(ws||!window.plus||!domready){
+				return;
+			}
+			// 获取窗口对象
+			ws=plus.webview.currentWebview();
+			wo=ws.opener();
+			// 开始扫描
+			ws.addEventListener('show', function(){
+				scan=new plus.barcode.Barcode('bcid');
+				scan.onmarked=onmarked;
+				scan.start({conserve:true,filename:'_doc/barcode/'});
+			}, false);
+			// 显示页面并关闭等待框
+			ws.show('pop-in');
+		}
+		
+		
+		if(window.plus){
+			plusReady();
+		}else{
+			document.addEventListener('plusready', plusReady, false);
+		}
+		// 监听DOMContentLoaded事件
+		document.addEventListener('DOMContentLoaded', function(){
+			domready=true;
+			plusReady();
+		}, false);
+		// 二维码扫描成功
+		function onmarked(type, result, file){
+			switch(type){
+				case plus.barcode.QR:
+				type = 'QR';
+				break;
+				case plus.barcode.EAN13:
+				type = 'EAN13';
+				break;
+				case plus.barcode.EAN8:
+				type = 'EAN8';
+				break;
+				default:
+				type = '其它'+type;
+				break;
+			}
+		
+			result = result.replace(/\r\n/g, '');
+			result = result.replace(/\"/g, '');
+			
+			if(result.length != 42)
+			{
+				mui.toast("请正确的输入钱包地址");
+				return false;
+			}
+
+			if(result.substr(0,2) != "0x")
+			{
+				mui.toast("地址开头一般为0x开头的42位字符");
+				return false;
+			}
+			
+			var address = "";
+			var accounts = plus.storage.getItem('accounts');			
+			if(!accounts)
+			{
+				accounts = new Array();
+			}
+			else
+			{
+				accounts = JSON.parse(accounts);
+			}
+			for(var i in accounts)
+			{
+				if(accounts[i].wallet_default == 1)
+				{
+					address = accounts[i].address;
+				}
+			}
+			
+			//从扫码进入的转账流程
+			localStorage.setItem("send-type",1);
+			mui.openWindow({
+				
+				url: '../send-step-1.html',
+				id: 'send-step-1.html',
+				extras:{
+					address:address,
+					receive_address:result,
+					main_chain:"QKI",
+					assets_name:"QKI"
+				},
+				show: {
+					autoShow:true,
+				},
+				waiting: {
+					autoShow: false
+				}
+			});
+		}
+		// 从相册中选择二维码图片 
+		function scanPicture(){
+			plus.gallery.pick(function(path){
+				plus.barcode.scan(path,onmarked,function(error){
+					plus.nativeUI.alert('无法识别此图片');
+				});
+			}, function(err){
+				console.log('Failed: '+err.message);
+			});
+		}
+	</script>
+	<style type="text/css">
+		#bcid {
+			width: 100%;
+			position: absolute;
+			top: 0px;
+			bottom: 0px;
+			text-align: center;
+			background: #000000;
+		}
+		#scan-picture{
+			font-size: 1.6rem;
+			line-height: 44px;
+			margin: 0;
+			padding: 0;
+		}
+	</style>
+	</head>
+	<body>
+		<header class="mui-bar mui-bar-nav app-header-1" id="header">
+			<a class="mui-action-back mui-icon icon iconfont icon-return mui-pull-left"></a>
+			<h1 class="mui-title">扫一扫</h1>
+			<a class="mui-icon mui-pull-right" id="scan-picture">相册</a>
+		</header>
+		<div class="mui-content" id="content">
+			<div id="bcid">
+			</div>
+		</div>
+		
+		<script src="../../../js/mui.min.js"></script>
+		<script src="../../../js/immersed.1.js"></script>
+		<script src="../../../js/h.min.js"></script>
+		<script src="https://cdn.ravenjs.com/3.26.4/raven.min.js" crossorigin="anonymous"></script>
+		<script type="text/javascript">
+			Raven.config('https://c1b1a9e60a2c43f6bc8e237d046d8433@sentry.quarkblockchain.cn/3').install();
+		</script>
+		<script type="text/javascript">
+			(function(w){
+			
+			document.addEventListener('plusready',function(){
+				// console.log("Immersed-UserAgent: "+navigator.userAgent);
+			},false);
+			
+			var immersed = 0;
+			var ms=(/Html5Plus\/.+\s\(.*(Immersed\/(\d+\.?\d*).*)\)/gi).exec(navigator.userAgent);
+			if(ms&&ms.length>=3){
+				immersed=parseFloat(ms[2]);
+			}
+			w.immersed=immersed;
+			if(!immersed){
+				return;
+			}
+			immersed = immersed+44;
+			
+			document.getElementById("bcid").style.top = immersed+"px";
+			
+			})(window);
+			
+			h("#scan-picture").tap(function(){
+				scanPicture();
+			});
+		</script>
+	</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../../css/mui.min.css">
+		<link rel="stylesheet" href="../../css/app.css">
+		<link rel="stylesheet" href="../../fonts/iconfont.css">
+	</head>
+	<body class="wallet-inner-page">
+		
+		<header class="mui-bar mui-bar-nav app-header-2" id="header" v-cloak>
+			<a class="mui-action-back mui-icon icon iconfont icon-return mui-pull-left"></a>
+			<h1 class="mui-title">{{wallet_name}}</h1>
+			<!-- <a class="mui-icon icon iconfont icon-more mui-pull-right" href="#topPopover"></a> -->
+		</header>
+		
+		<div class="mui-content" id="content"  v-cloak>
+			
+			<div class="wallet-bar">
+				{{assetsAmount.toFixed(2)}} <span>¥</span>
+			</div>
+			
+			<div class="assets-title">
+				资产列表
+			</div>
+			
+			<div class="wallet-assets">
+				
+				<div class="item" v-on:tap="tapAssets(item.assets_name,item.main_chain)" v-for="item in assetsList">
+					<span :class="setIcon(item.icon)"></span>
+					<span class="assets-name mui-pull-left">{{item.assets_name}}</span>
+					<span class="mui-badge mui-pull-left token-name" v-if="item.is_main == 0">{{item.description}}</span>
+					<div class="assets-amount mui-pull-right">
+						<p>{{item.amount}}</p>
+						<p class="legal-money" v-if="item.legal_money > 0">
+							¥ {{item.legal_money}}
+						</p>
+						<p class="legal-money" v-if="item.legal_money == 0">
+							-
+						</p>
+					</div>
+					
+				</div>
+				
+			</div>
+			
+		</div>
+		
+		<!--右上角弹出菜单-->
+		<div id="topPopover" class="mui-popover wallet-inner-popover">
+			
+			<div class="item" id="del-btn">
+				钱包管理
+			</div>
+			
+		</div>
+		
+	</body>
+	<script src="../../js/mui.min.js"></script>
+	<script src="../../js/immersed.1.js"></script>
+	<script src="../../js/h.min.js"></script>
+	<script src="../../js/math.min.js"></script>
+	<script src="../../js/ethers.min.js"></script>
+	<script src="../../js/app.js"></script>
+	<script src="../../js/vue.min.js"></script>
+	
+	<script>
+		mui.init({
+			swipeBack:true //启用右滑关闭功能
+		});
+		
+		var wallet_name = "";
+		var private_key = "";
+		var address = "";
+		mui.plusReady(function() {
+			
+			var self = plus.webview.currentWebview();
+			wallet_name = self.wallet_name;
+			private_key = self.private_key;
+			address = self.address;
+			
+			updateEthAmount(address);
+			updateEthTokenAmount(address,"USDT");
+			
+			vm_header = new Vue({
+				el: '#header',
+				data: {
+					wallet_name:"我的钱包",
+				}
+			});
+			
+			vm = new Vue({
+				el: '#content',
+				data: {
+					assetsAmount:getWalletAssetsAmount(address),
+					assetsList:showAssets(address),
+				},
+				methods: {
+					
+					tapAssets: function (assets_name,main_chain) {
+							
+						mui.openWindow({
+							url: "assets-inner.html",
+							id: "assets-inner.html",
+							extras:{
+								assets_name:assets_name,
+								main_chain:main_chain,
+								address:address
+							},
+							show:{
+								autoShow:true,
+								aniShow:'slide-in-right',
+							},
+							waiting:{
+								autoShow:false,
+							}
+						});
+							
+					},
+					setIcon(icon) {
+						let obj = {'assets-ico':true,'icon':true,'iconfont':true,'mui-pull-left':true};
+						obj[`${icon}`] = true;
+						return obj;
+					},
+
+				}
+			});
+			
+			vm_header.wallet_name = wallet_name;
+			
+		});
+		
+	</script>
+</html>

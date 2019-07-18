@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../../../css/mui.min.css">
+		<link rel="stylesheet" href="../../../css/app.css">
+		<link rel="stylesheet" href="../../../fonts/iconfont.css">
+	</head>
+	<body class="manage-wallet-page">
+		
+		<header class="mui-bar mui-bar-nav app-header-1" id="header">
+			<a class="mui-action-back mui-icon icon iconfont icon-return mui-pull-left"></a>
+			<h1 class="mui-title">钱包管理</h1>
+			<a class="mui-icon icon iconfont icon-more mui-pull-right" href="#topPopover"></a>
+		</header>
+		
+		<div class="mui-content" id="content" v-cloak>
+			
+			<div class="manage-wallet-bar">
+				<div class="wallet-name" id="wallet-name">
+					{{wallet_name}}
+				</div>
+				<div class="tip">
+					普通钱包
+				</div>
+			</div>
+			
+			<ul class="mui-table-view manage-wallet-menu">
+				<li class="mui-table-view-cell item" id="backups-wallet-btn" v-if="mnemonic != '' ">
+					<a class="mui-navigate-right">
+						<span class="mui-icon icon iconfont icon-questions"></span>
+						<span class="title">备份钱包</span>
+					</a>
+				</li>
+				<li class="mui-table-view-cell item" id="export-private-btn">
+					<a class="mui-navigate-right">
+						<span class="mui-icon icon iconfont icon-unlock"></span>
+						<span class="title">导出私钥</span>
+					</a>
+				</li>
+				<li class="mui-table-view-cell item" id="default-wallet-btn">
+					<a class="mui-navigate-right">
+						<span class="mui-icon icon iconfont icon-label"></span>
+						<span class="title">设置默认钱包</span>
+					</a>
+				</li>
+			</ul>
+				
+		</div>
+		
+		<!--右上角弹出菜单-->
+		<div id="topPopover" class="mui-popover manage-wallet-popover">
+			
+			<div class="item" id="del-btn">
+				删除钱包
+			</div>
+			
+		</div>
+		
+		<div class="mui-popover verify-password-box del-wallet-btn">
+			
+			<div class="title">
+				输入钱包密码
+			</div>
+			
+			<div class="wallet-name" id="wallet-name">
+				
+			</div>
+			
+			<div class="input-item">
+				<input type="password" name="" id="password" value="" />
+			</div>
+			
+			<p class="tip" id="password-tip" style="display: none;">
+				密码输入错误
+			</p>
+			
+			<button type="button" class="send-btn mui-btn mui-btn-block" data-loading-text="验证中,请稍等" id="verify-btn">确定</button>
+			<button type="button" class="cancel-btn mui-btn mui-btn-block" id="cancel-btn">取消</button>
+			
+		</div>
+			
+	</body>
+	<script src="../../../js/mui.min.js"></script>
+	<script src="../../../js/immersed.js"></script>
+	<script src="../../../js/h.min.js"></script>
+	<script src="../../../js/vue.min.js"></script>
+	<script src="../../../js/app.js"></script>
+	
+	<script>
+		mui.init({
+			swipeBack:true //启用右滑关闭功能
+		});
+		
+		var nativeWebview, imm, InputMethodManager;
+		var initNativeObjects = function() {
+			if (mui.os.android) {
+				var main = plus.android.runtimeMainActivity();
+				var Context = plus.android.importClass("android.content.Context");
+				InputMethodManager = plus.android.importClass("android.view.inputmethod.InputMethodManager");
+				imm = main.getSystemService(Context.INPUT_METHOD_SERVICE);
+			} else {
+				nativeWebview = plus.webview.currentWebview().nativeInstanceObject();
+			}
+		};
+		var showSoftInput = function() {
+			if (mui.os.android) {
+				imm.toggleSoftInput(0, InputMethodManager.SHOW_FORCED);
+			} else {
+				nativeWebview.plusCallMethod({
+					"setKeyboardDisplayRequiresUserAction": false
+				});
+			}
+			setTimeout(function() {
+				var inputElem = document.getElementById("password");
+				inputElem.focus();
+			}, 500);
+		};
+		
+		mui.plusReady(function() {
+			
+			var self = plus.webview.currentWebview();
+			var address = self.address;
+			var wallet_name = self.wallet_name;
+			
+			var wallet = getWallet(address);
+			
+			vm = new Vue({
+				el: '#content',
+				data: {
+					wallet_name:wallet_name,
+					mnemonic:wallet.mnemonic
+				},
+				
+			});
+			
+			document.getElementById("wallet-name").innerHTML = wallet_name;
+			
+			//备份钱包
+			h("#backups-wallet-btn").tap(function(){
+				plus.storage.setItem("is_create",0);
+				mui.openWindow({
+					url: "../start-backups.html",
+					id: "start-backups.html",
+					extras:{
+						address:address
+					},
+					show:{
+						autoShow:true,
+						aniShow:'slide-in-right',
+					},
+					waiting:{
+						autoShow:false,
+					}
+				});
+			})
+			
+			h("#export-private-btn").tap(function(){
+				mui.openWindow({
+					url: "export-private.html",
+					id: "export-private.html",
+					extras:{
+						address:address
+					},
+					show:{
+						autoShow:true,
+						aniShow:'slide-in-right',
+					},
+					waiting:{
+						autoShow:false,
+					}
+				});
+			})
+			
+			h("#default-wallet-btn").tap(function(){
+				
+				var accounts = plus.storage.getItem('accounts');
+				if(!accounts)
+				{
+					accounts = new Array();
+				}
+				else
+				{
+					accounts = JSON.parse(accounts);
+				}
+				
+				for(var i in accounts)
+				{
+					if(address == accounts[i].address)
+					{
+						accounts[i].wallet_default = 1;
+					}
+					else
+					{
+						accounts[i].wallet_default = 0;
+					}
+				}
+				plus.storage.setItem("accounts",JSON.stringify(accounts));
+				var manageWalletListPage = plus.webview.getWebviewById("manage-wallet-list.html");
+				mui.fire(manageWalletListPage,'fresh-wallet');
+				mui.toast("设置默认钱包成功");
+			})
+			
+			
+			h("#del-btn").tap(function(){
+				initNativeObjects();
+				showSoftInput();
+				mui('.verify-password-box').popover('show');
+			})
+			
+			
+			
+			//删除钱包
+			h("#verify-btn").tap(function(){
+				
+				var password = document.getElementById("password").value;
+				document.activeElement.blur(); 
+				mui("#verify-btn").button('loading');
+				setTimeout(function() {
+					
+					if(password != wallet.password)
+					{
+						document.getElementById("password-tip").style.display="block";
+						showSoftInput();
+						mui("#verify-btn").button('reset');
+						return false;
+					}
+					
+					var accounts = plus.storage.getItem('accounts');
+					
+					if(!accounts)
+					{
+						accounts = new Array();
+					}
+					else
+					{
+						accounts = JSON.parse(accounts);
+					}
+					var is_default = 0;
+					for(var i in accounts)
+					{
+						if(address == accounts[i].address )
+						{
+							if(accounts[i].wallet_default == 1)
+							{
+								is_default = 1;
+							}
+							accounts.splice(i,1);
+						}
+					}
+					if(is_default == 1)
+					{
+						for(var i in accounts)
+						{
+							accounts[i].wallet_default = 1;
+							break;
+						}
+					}
+					
+					plus.storage.setItem("accounts",JSON.stringify(accounts));
+				
+					mui.toast("删除钱包成功");
+					document.getElementById("password-tip").style.display="none";
+					
+					mui("#verify-btn").button('reset');
+					
+					var manageWalletListPage = plus.webview.getWebviewById("manage-wallet-list.html");
+					mui.fire(manageWalletListPage,'fresh-wallet');
+					var indexPage = plus.webview.getWebviewById("tab-subpage-index.html");
+					mui.fire(indexPage,'fresh-wallet');
+					
+					mui.back();
+					
+				}.bind(this), 2000);
+				
+			})
+			
+			h("#cancel-btn").tap(function(){
+				document.activeElement.blur(); 
+				mui('.verify-password-box').popover('hide');
+			})
+			
+		});
+
+		
+		
+	</script>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../../../css/mui.min.css">
+		<link rel="stylesheet" href="../../../css/app.css">
+		<link rel="stylesheet" href="../../../fonts/iconfont.css">
+	</head>
+	<body>
+		
+		<header class="mui-bar mui-bar-nav app-header-1" id="header">
+			<a class="mui-action-back mui-icon icon iconfont icon-return mui-pull-left"></a>
+			<h1 class="mui-title">输入助记词</h1>
+		</header>
+		
+		<nav class="mui-bar mui-bar-tab button-bar">
+			<button type="button" data-loading-text="请稍等..." class="create-wallet-btn mui-btn mui-btn-block" id="next-btn">下一步</button>
+		</nav>
+		
+		<div class="mui-content" id="content">
+			
+			<div class="create-wallet-tip">
+				
+				<span class="mui-icon icon iconfont icon-text mui-pull-left"></span>
+				<div class="inner mui-pull-left">
+					助记词是私钥的另外一种形式，一般由12、15、18、21个单词组成，输入时用空格分开。
+				</div>
+				
+			</div>
+			
+			<div class="import-box">
+				
+				<textarea rows="" cols="" id="mnemonic" placeholder="请输入你的助记词"></textarea>
+				
+			</div>
+			
+		</div>
+		
+	</body>
+	<script src="../../../js/mui.min.js"></script>
+	<script src="../../../js/immersed.js"></script>
+	<script src="../../../js/h.min.js"></script>
+	<script src="../../../js/ethers.min.js"></script>
+	<script src="../../../js/app.js"></script>
+	
+	<script>
+		mui.init({
+			swipeBack:true //启用右滑关闭功能
+		});
+		
+		h("#next-btn").tap(function(){
+			
+			var monic = document.getElementById("mnemonic").value;
+			
+			if(monic == "")
+			{
+				mui.toast("请输入助记词");
+				return false;
+				mui("#next-btn").button('reset');
+			}
+			
+			var accounts = plus.storage.getItem('accounts');
+			if(!accounts)
+			{
+				accounts = new Array();
+			}
+			else
+			{
+				accounts = JSON.parse(accounts);
+			}
+			var exists = false;
+			for(var i in accounts)
+			{
+				if(monic == accounts[i].mnemonic )
+				{
+					exists = true;
+					break;
+				}
+			}
+			if(exists == true)
+			{
+				var btnArray = ['取消', '重置'];
+				mui.confirm('是否重置名称和密码？', '钱包已存在', btnArray, function(e) {
+					
+					if (e.index == 1) 
+					{
+						mui("#next-btn").button('loading');
+						setTimeout(function() {
+							importWallet(monic);
+							mui("#next-btn").button('reset');
+							
+						}.bind(this), 2000);
+					}
+					else
+					{
+						mui("#next-btn").button('reset');
+						return false;
+					}
+				})
+			}
+			else
+			{
+				mui("#next-btn").button('loading');
+				setTimeout(function() {
+					importWallet(monic);
+					mui("#next-btn").button('reset');
+					
+				}.bind(this), 2000);
+			}
+		})
+		
+		//导入钱包
+		function importWallet(monic)
+		{
+			try
+			{
+				mnemonic = ethers.Wallet.fromMnemonic(monic);
+			}
+			catch(error)
+			{ 
+				mui.toast("请正确输入助记词");
+				return false;
+				mui("#next-btn").button('reset');
+			}
+			
+			mui.openWindow({
+				url: "import-step-2.html",
+				id: "import-step-2.html",
+				extras:{
+					monic:monic
+				},
+				show:{
+					autoShow:true,
+					aniShow:'slide-in-right',
+				},
+				waiting:{
+					autoShow:false,
+				}
+			});
+		}
+		
+		
+	</script>
+</html>

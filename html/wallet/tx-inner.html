@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../../css/mui.min.css">
+		<link rel="stylesheet" href="../../css/app.css">
+		<link rel="stylesheet" href="../../fonts/iconfont.css">
+	</head>
+	<body class="wallet-inner-page">
+		
+		<header class="mui-bar mui-bar-nav app-header-2" id="header" v-cloak>
+			<a class="mui-action-back mui-icon icon iconfont icon-return mui-pull-left"></a>
+			<h1 class="mui-title">交易详情</h1>
+			<!-- <a class="mui-icon icon iconfont icon-more mui-pull-right" href="#topPopover"></a> -->
+		</header>
+		
+		<div class="mui-content" id="content"  v-cloak>
+			
+			<div class="wallet-bar transfer-inner-bar">
+				
+			</div>
+			
+			<div class="tx-inner-box">
+				
+				<div class="tx-success-ico">
+					<span class="mui-icon iconfont icon-success_fill"></span>
+				</div>
+				<p class="status-text">交易成功</p>
+				
+				<p class="tx-amount">
+					+34123.123
+				</p>
+				
+			</div>
+			
+			
+		</div>
+		
+		
+	</body>
+	<script src="../../js/mui.min.js"></script>
+	<script src="../../js/immersed.1.js"></script>
+	<script src="../../js/h.min.js"></script>
+	<script src="../../js/math.min.js"></script>
+	<script src="../../js/app.js"></script>
+	<script src="../../js/vue.min.js"></script>
+	
+	<script>
+		mui.init({
+			swipeBack:true //启用右滑关闭功能
+		});
+		
+		var wallet_name = "";
+		var private_key = "";
+		var address = "";
+		mui.plusReady(function() {
+			
+			var self = plus.webview.currentWebview();
+			wallet_name = self.wallet_name;
+			private_key = self.private_key;
+			address = self.address;
+			
+			vm_header = new Vue({
+				el: '#header',
+				data: {
+					wallet_name:"我的钱包",
+				}
+			});
+			
+			vm = new Vue({
+				el: '#content',
+				data: {
+					assetsAmount:getWalletAssetsAmount(address),
+					assetsList:showAssets(address),
+				},
+				methods: {
+					
+					tapAssets: function (assets_name) {
+							
+						mui.openWindow({
+							url: "assets-inner.html",
+							id: "assets-inner.html",
+							extras:{
+								assets_name:assets_name,
+								address:address
+							},
+							show:{
+								autoShow:true,
+								aniShow:'slide-in-right',
+							},
+							waiting:{
+								autoShow:false,
+							}
+						});
+							
+					}
+
+				}
+			});
+			
+			
+		});
+		
+	</script>
+</html>

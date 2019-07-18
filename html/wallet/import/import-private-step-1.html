@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../../../css/mui.min.css">
+		<link rel="stylesheet" href="../../../css/app.css">
+		<link rel="stylesheet" href="../../../fonts/iconfont.css">
+	</head>
+	<body>
+		
+		<header class="mui-bar mui-bar-nav app-header-1" id="header">
+			<a class="mui-action-back mui-icon icon iconfont icon-return mui-pull-left"></a>
+			<h1 class="mui-title">输入私钥</h1>
+		</header>
+		
+		<nav class="mui-bar mui-bar-tab button-bar">
+			<button type="button" data-loading-text="请稍等..." class="create-wallet-btn mui-btn mui-btn-block" id="next-btn">下一步</button>
+		</nav>
+		
+		<div class="mui-content" id="content">
+			
+			<div class="create-wallet-tip">
+				
+				<span class="mui-icon icon iconfont icon-unlock_fill mui-pull-left"></span>
+				<div class="inner mui-pull-left">
+					私钥是区块链系统中最为重要的信息，用于转账时的签名。在输入框里粘贴明文私钥。
+				</div>
+				
+			</div>
+			
+			<div class="import-box">
+				
+				<textarea rows="" cols="" id="private-key" placeholder="请输入私钥"></textarea>
+				
+			</div>
+			
+		</div>
+		
+	</body>
+	<script src="../../../js/mui.min.js"></script>
+	<script src="../../../js/immersed.js"></script>
+	<script src="../../../js/h.min.js"></script>
+	<script src="../../../js/ethers.min.js"></script>
+	<script src="../../../js/app.js"></script>
+	
+	<script>
+		mui.init({
+			swipeBack:true //启用右滑关闭功能
+		});
+		
+		h("#next-btn").tap(function(){
+			
+			var private_key = document.getElementById("private-key").value;
+			
+			if(private_key == "")
+			{
+				mui.toast("请输入私钥");
+				return false;
+				mui("#next-btn").button('reset');
+			}
+			
+			var accounts = plus.storage.getItem('accounts');
+			if(!accounts)
+			{
+				accounts = new Array();
+			}
+			else
+			{
+				accounts = JSON.parse(accounts);
+			}
+			var exists = false;
+			for(var i in accounts)
+			{
+				if(private_key == accounts[i].private_key )
+				{
+					exists = true;
+					break;
+				}
+			}
+			if(exists == true)
+			{
+				var btnArray = ['取消', '重置'];
+				mui.confirm('是否重置名称和密码？', '钱包已存在', btnArray, function(e) {
+					
+					if (e.index == 1) 
+					{
+						mui("#next-btn").button('loading');
+						setTimeout(function() {
+							importWallet(private_key);
+							mui("#next-btn").button('reset');
+							
+						}.bind(this), 2000);
+					}
+					else
+					{
+						mui("#next-btn").button('reset');
+						return false;
+					}
+				})
+			}
+			else
+			{
+				mui("#next-btn").button('loading');
+				setTimeout(function() {
+					importWallet(private_key);
+					mui("#next-btn").button('reset');
+					
+				}.bind(this), 2000);
+			}
+		})
+		
+		//导入钱包
+		function importWallet(private_key)
+		{
+			try
+			{
+				let wallet = new ethers.Wallet(private_key);
+			}
+			catch(error)
+			{ 
+				mui.toast("请正确输入私钥");
+				return false;
+				mui("#next-btn").button('reset');
+			}
+			
+			mui.openWindow({
+				url: "import-private-step-2.html",
+				id: "import-private-step-2.html",
+				extras:{
+					private_key:private_key
+				},
+				show:{
+					autoShow:true,
+					aniShow:'slide-in-right',
+				},
+				waiting:{
+					autoShow:false,
+				}
+			});
+		}
+		
+		
+	</script>
+</html>

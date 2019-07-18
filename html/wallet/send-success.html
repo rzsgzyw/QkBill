@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../../css/mui.min.css">
+		<link rel="stylesheet" href="../../css/app.css">
+		<link rel="stylesheet" href="../../fonts/iconfont.css">
+	</head>
+	<body>
+		
+		<header class="mui-bar mui-bar-nav app-header-1" id="header">
+			<a class="mui-icon mui-icon-text mui-pull-right" id="finish-btn">完成</a>
+		</header>
+		
+		<div class="mui-content" id="content">
+			
+			<div class="send-success-box">
+				
+				<span class="mui-icon icon iconfont icon-success_fill success-icon"></span>
+				
+				<p class="status-text">
+					提交成功
+				</p>
+				
+				<p class="number">
+					{{amount}} {{assets_name}}
+				</p>
+				
+				<p class="address">
+					{{send_address}}
+				</p>
+				
+			</div>
+			
+			<div class="send-success-add-contacts">
+				
+				<a id="add-contacts-btn">
+					<i class="icon iconfont icon-add"></i><span>快速创建联系人</span>
+				</a>
+				
+			</div>
+			
+			<div class="block-brower">
+				
+				
+				<div class="qrcode" id="qrcode">
+					
+				</div>
+				
+				<p id="brower-btn">去 qki.im 查看交易</p>
+				
+			</div>
+			
+		</div>
+		
+	</body>
+	<script src="../../js/mui.min.js"></script>
+	<script src="../../js/immersed.js"></script>
+	<script src="../../js/h.min.js"></script>
+	<script src="../../js/app.js"></script>
+	<script src="../../js/qrcode.min.js"></script>
+	<script src="../../js/vue.min.js"></script>
+	
+	<script>
+		mui.init({
+			//侧滑关闭
+			swipeBack:false, //Boolean(默认false)启用右滑关闭功能
+			beforeback: function() {
+				return false;
+			},
+		})
+		
+		
+		mui.plusReady(function() {
+			
+			var self = plus.webview.currentWebview();
+			var hash = self.hash;
+			var assets_name = self.assets_name;
+			var send_address = self.send_address;
+			var amount = self.amount;
+			
+			var brower_link = "https://new-block-browser.quarkblockchain.cn/tx/"+hash;
+	
+			vm = new Vue({
+				el: '#content',
+				data: {
+					assets_name:assets_name,
+					amount:amount,
+					send_address:send_address,
+					hash:hash
+				}
+			});
+			
+			
+			// 设置参数方式
+			var qrcode = new QRCode('qrcode', {
+				text: hash,
+				width: 256,
+				height: 256,
+				colorDark : '#000000',
+				colorLight : '#ffffff',
+				correctLevel : QRCode.CorrectLevel.H
+			});
+			
+			h("#add-contacts-btn").tap(function(){
+				mui.openWindow({
+					url: "../contacts/add-contacts.html",
+					id: "add-contacts.html",
+					extras:{
+						address:send_address
+					},
+					show:{
+						autoShow:true,
+						aniShow:'slide-in-right',
+					},
+					waiting:{
+						autoShow:false,
+					}
+				});
+			})
+			
+			h("#finish-btn").tap(function(){
+				//获得主页面的webview
+				var main = plus.webview.getLaunchWebview();
+				//触发主页面的gohome事件
+				mui.fire(main,'gohome');
+				
+				var indexPage = plus.webview.getWebviewById("tab-subpage-index.html");
+				mui.fire(indexPage,'fresh-wallet');
+		
+				//判断是否从扫码进入的转账流程
+				if(localStorage.getItem("send-type") == 0)
+				{
+					plus.webview.getWebviewById('wallet-inner.html').close();
+					plus.webview.getWebviewById('assets-inner.html').close();
+				}
+				else if(localStorage.getItem("send-type") == 1)
+				{
+					plus.webview.getWebviewById('scan-1.html').close();
+				}
+				else if(localStorage.getItem("send-type") == 3)
+				{
+					plus.webview.getWebviewById('contacts-inner.html').close();
+				}
+				
+				plus.webview.getWebviewById('send-step-1.html').close();
+				plus.webview.getWebviewById('send-step-2.html').close();
+
+				self.close();
+				main.show();
+				
+			})
+		})
+	</script>
+</html>

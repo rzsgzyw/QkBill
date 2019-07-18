@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../../css/mui.min.css">
+		<link rel="stylesheet" href="../../css/app.css">
+		<link rel="stylesheet" href="../../fonts/iconfont.css">
+	</head>
+	<body>
+		
+		<header class="mui-bar mui-bar-nav app-header-1" id="header">
+			<a class="mui-action-back mui-icon icon iconfont icon-return mui-pull-left"></a>
+			<h1 class="mui-title">发送数量</h1>
+		</header>
+	
+		<div class="mui-content" id="content" v-cloak>
+			
+			<div class="receive-send-box">
+				
+				<div class="send-box send-box-2">
+					
+					<form class="mui-input-group">
+						<div class="mui-input-row item">
+							<input type="number" id="number" placeholder="数量">
+							<span class="mui-icon assets-type">{{assets_name}}</span>
+						</div>
+					</form>
+					
+					<div class="assets-balance">
+						可用 <a id="all-send">{{amount}} {{assets_name}}</a>
+					</div>
+					
+					<button type="button" data-loading-text="请稍等" class="send-btn mui-btn mui-btn-block" id="next-btn">下一步</button>
+					
+				</div>
+				
+			</div>
+			
+			<div class="mui-popover send-verify-box">
+				
+				<div class="inner-box">
+					<div class="item">
+						<span class="title mui-pull-left">
+							发送数量
+						</span>
+						<span class="value mui-pull-left amount">
+							{{send_amount}} {{assets_name}}
+						</span>
+					</div>
+					
+					<div class="item">
+						<span class="title mui-pull-left">
+							矿工费
+						</span>
+						<span class="value mui-pull-left" v-if="is_main == 1">
+							{{fee}} {{gas_name}}
+						</span>
+						<span class="value mui-pull-left" v-if="is_main == 0">
+							{{token_fee}} {{gas_name}}(大约)
+						</span>
+					</div>
+					
+					<div class="item">
+						<span class="title mui-pull-left">
+							接收方
+						</span>
+						<span class="value mui-pull-left">
+							{{receive_address}}
+						</span>
+					</div>
+					
+					<div class="item">
+						<span class="title mui-pull-left">
+							发送钱包
+						</span>
+						<span class="value mui-pull-left">
+							{{wallet_name}}
+						</span>
+					</div>
+				</div>
+				
+				<button type="button" data-loading-text="提交中,请稍等" class="send-btn mui-btn mui-btn-block" id="send-btn">确认发送</button>
+			</div>
+			
+			<div class="mui-popover verify-password-box">
+				
+				<div class="title">
+					输入钱包密码
+				</div>
+				
+				<div class="input-item">
+					<input type="password" name="" id="password" value="" />
+				</div>
+				
+				<p class="tip" id="password-tip" style="display: none;">
+					密码输入错误
+				</p>
+				
+				<button type="button" class="send-btn mui-btn mui-btn-block" id="verify-btn">确定</button>
+				<button type="button" class="cancel-btn mui-btn mui-btn-block" id="cancel-btn">取消</button>
+				
+			</div>
+			
+		</div>
+		
+	</body>
+	<script src="../../js/mui.min.js"></script>
+	<script src="../../js/immersed.js"></script>
+	<script src="../../js/h.min.js"></script>
+	<script src="../../js/vue.min.js"></script>
+	<script src="../../js/ethers.min.js"></script>
+	<script src="../../js/math.min.js"></script>
+	<script src="../../js/app.js"></script>
+	
+	<script>
+		mui.init({
+			swipeBack:true //启用右滑关闭功能
+		});
+		
+		var nativeWebview, imm, InputMethodManager;
+		var initNativeObjects = function() {
+			if (mui.os.android) {
+				var main = plus.android.runtimeMainActivity();
+				var Context = plus.android.importClass("android.content.Context");
+				InputMethodManager = plus.android.importClass("android.view.inputmethod.InputMethodManager");
+				imm = main.getSystemService(Context.INPUT_METHOD_SERVICE);
+			} else {
+				nativeWebview = plus.webview.currentWebview().nativeInstanceObject();
+			}
+		};
+		var showSoftInput = function() {
+			if (mui.os.android) {
+				imm.toggleSoftInput(0, InputMethodManager.SHOW_FORCED);
+			} else {
+				nativeWebview.plusCallMethod({
+					"setKeyboardDisplayRequiresUserAction": false
+				});
+			}
+			setTimeout(function() {
+				var inputElem = document.getElementById("password");
+				inputElem.focus();
+			}, 500);
+		};
+		
+		
+		mui.plusReady(function() {
+			
+			plus.webview.currentWebview().setStyle({
+				softinputMode: "adjustResize"
+			});
+			
+			initNativeObjects();
+			showSoftInput();
+			
+			var self = plus.webview.currentWebview();
+			var address = self.address;
+			var assets_name = self.assets_name;
+			var receive_address = self.receive_address;
+			var main_chain = self.main_chain;
+			
+			//获取钱包
+			wallet = getWallet(address);
+			//获取资产
+			var assets = getAssets(address,assets_name,main_chain);
+			
+			vm = new Vue({
+				el: '#content',
+				data: {
+					assets_name:assets_name,
+					wallet_name:wallet.wallet_name,
+					amount:assets.amount,
+					send_amount:0,
+					receive_address:receive_address,
+					is_main:assets.is_main,
+					fee:0,
+					gas_name:assets.main_chain,
+					token_fee:getTokenGasPrice(),
+				}
+			});
+		
+			//计算矿工费
+			getGasPrice(assets.is_main);
+			
+			h("#all-send").tap(function(){
+				
+				var gas = 21000;
+				if(assets.main_chain == "QKI")
+				{
+					var provider = new ethers.providers.JsonRpcProvider({"url":getNodeHost()});
+				}
+				else
+				{
+					var provider = new ethers.providers.EtherscanProvider("homestead","TJDWN2WQI6WF4ERNW4FDXJGB9DSQ881P7J");
+				}
+		
+				provider.getGasPrice(10).then((gasPrice) => {
+					
+					if(assets.is_main == 1)
+					{
+						gasPriceString = gasPrice.toString();
+						h("#number").val(assets.amount - ethers.utils.formatEther(math.multiply(gas,gasPriceString)));
+					}
+					else
+					{
+						h("#number").val(assets.amount);
+					}
+					
+				});
+				
+			})
+			
+			h("#next-btn").tap(function(){
+		
+				var send_amount = document.getElementById("number").value;
+				if(send_amount == "")
+				{
+					mui.toast("请输入数量");
+					return false;
+				}
+				if(send_amount <= 0)
+				{
+					mui.toast("请输入正确的数量");
+					return false;
+				}
+				
+				if(send_amount > assets.amount)
+				{
+					mui.toast("资产余额不足");
+					return false;
+				}
+				
+				vm.send_amount = send_amount;
+				document.activeElement.blur();
+				mui(this).button('loading');
+				setTimeout("mui('.send-verify-box').popover('show');mui('#next-btn').button('reset');",1000)
+			});
+			
+			h("#send-btn").tap(function(){
+				
+				initNativeObjects();
+				showSoftInput();
+				
+				mui('.verify-password-box').popover('show');
+				
+			});
+			
+			
+			h("#cancel-btn").tap(function(){
+				document.getElementById("password").value = "";
+				document.getElementById("password-tip").style.display="none";
+				mui('.send-verify-box').popover('show');
+				mui('.verify-password-box').popover('hide');
+			});
+			
+			h("#verify-btn").tap(function(){
+				
+				var send_amount = document.getElementById("number").value;
+				var password = document.getElementById("password").value;
+				
+				if(password != wallet.password)
+				{
+					document.getElementById("password-tip").style.display="block";
+					showSoftInput();
+					return false;
+				}
+				document.getElementById("password-tip").style.display="none";
+				
+				mui('.verify-password-box').popover('hide');
+				mui('.send-verify-box').popover('show');
+				
+				mui("#send-btn").button('loading');
+				document.getElementById("password").value = "";
+				document.activeElement.blur();
+				if(assets.is_main == 1)
+				{
+					transfer_qki(wallet.private_key,receive_address,send_amount,assets_name);
+				}
+				else
+				{
+					transfer_qki_token(wallet.private_key,assets.token_address,receive_address,send_amount,assets_name,assets.main_chain)
+				}
+			});
+		})
+		
+		
+		//qki转账
+		function transfer_qki(privateKey,send_address,send_amount,assets_name)
+		{
+			if(assets_name == "QKI")
+			{
+				var provider = new ethers.providers.JsonRpcProvider({"url":getNodeHost()});
+			}
+			else
+			{
+				var provider = new ethers.providers.EtherscanProvider("homestead","TJDWN2WQI6WF4ERNW4FDXJGB9DSQ881P7J");
+			}
+			
+			var privateKey = privateKey;
+			var wallet = new ethers.Wallet(privateKey, provider);
+		
+			var amount = ethers.utils.parseEther(send_amount);
+		
+			var tx = {
+				to: send_address,
+				value: amount
+			};
+		
+			var sendPromise = wallet.sendTransaction(tx);
+		
+			sendPromise.then((tx) => {
+				
+				var hash = tx;
+								
+				mui.openWindow({
+					url:"send-success.html",
+					id:"send-success.html",
+					extras:{
+						hash:hash,
+						amount:send_amount,
+						assets_name:assets_name,
+						send_address:send_address
+					},
+					styles: {
+						popGesture: 'none',
+					},
+					show:{
+						autoShow:true,//页面loaded事件发生后自动显示，默认为true
+						aniShow: 'slide-in-right'
+					},
+					waiting: {
+						autoShow: false
+					}
+				});
+
+				mui("#send-btn").button('reset');
+				
+				
+			},function (data) {
+				mui("#send-btn").button('reset');
+				if(data.code == "INSUFFICIENT_FUNDS")
+				{
+					mui.toast("账户异常，请检查密码是否正确或"+assets_name+"余额是否足够支付矿工费");
+				}else{
+					mui.toast("网络异常");
+				}
+			});
+		}
+		
+		//token转账
+		function transfer_qki_token(privateKey,token_address,send_address,send_amount,assets_name,main_chain)
+		{
+		
+			if(main_chain == "QKI")
+			{
+				var provider = new ethers.providers.JsonRpcProvider({"url":getNodeHost()});
+			}
+			else
+			{
+				var provider = new ethers.providers.EtherscanProvider("homestead","TJDWN2WQI6WF4ERNW4FDXJGB9DSQ881P7J");
+			}
+			// abi json 对象
+			const abi = [ { "constant": true, "inputs": [], "name": "name", "outputs": [ { "name": "", "type": "string" } ], "payable": false, "type": "function" }, { "constant": true, "inputs": [], "name": "symbol", "outputs": [ { "name": "", "type": "string" } ], "payable": false, "type": "function" }, { "constant": true, "inputs": [], "name": "decimals", "outputs": [ { "name": "", "type": "uint8" } ], "payable": false, "type": "function" }, { "constant": true, "inputs": [], "name": "totalSupply", "outputs": [ { "name": "", "type": "uint256" } ], "payable": false, "type": "function" }, { "constant": true, "inputs": [ { "name": "_owner", "type": "address" } ], "name": "balanceOf", "outputs": [ { "name": "balance", "type": "uint256" } ], "payable": false, "type": "function" }, { "constant": false, "inputs": [ { "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" } ], "name": "transfer", "outputs": [ { "name": "success", "type": "bool" } ], "payable": false, "type": "function" }, { "constant": false, "inputs": [ { "name": "_from", "type": "address" }, { "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" } ], "name": "transferFrom", "outputs": [ { "name": "success", "type": "bool" } ], "payable": false, "type": "function" }, { "constant": false, "inputs": [ { "name": "_spender", "type": "address" }, { "name": "_value", "type": "uint256" } ], "name": "approve", "outputs": [ { "name": "success", "type": "bool" } ], "payable": false, "type": "function" }, { "constant": true, "inputs": [ { "name": "_owner", "type": "address" }, { "name": "_spender", "type": "address" } ], "name": "allowance", "outputs": [ { "name": "remaining", "type": "uint256" } ], "payable": false, "type": "function" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_from", "type": "address" }, { "indexed": true, "name": "_to", "type": "address" }, { "indexed": false, "name": "_value", "type": "uint256" } ], "name": "Transfer", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_owner", "type": "address" }, { "indexed": true, "name": "_spender", "type": "address" }, { "indexed": false, "name": "_value", "type": "uint256" } ], "name": "Approval", "type": "event" }, { "inputs": [ { "name": "_initialAmount", "type": "uint256" }, { "name": "_tokenName", "type": "string" }, { "name": "_decimalUnits", "type": "uint8" }, { "name": "_tokenSymbol", "type": "string" } ], "payable": false, "type": "constructor" }, { "constant": false, "inputs": [ { "name": "_spender", "type": "address" }, { "name": "_value", "type": "uint256" }, { "name": "_extraData", "type": "bytes" } ], "name": "approveAndCall", "outputs": [ { "name": "success", "type": "bool" } ], "payable": false, "type": "function" }, { "constant": true, "inputs": [], "name": "version", "outputs": [ { "name": "", "type": "string" } ], "payable": false, "type": "function" } ];
+			
+		
+			var walletWithProvider = new ethers.Wallet(privateKey, provider);
+			
+			// 创建智能合约
+			const contract = new ethers.Contract(token_address, abi, walletWithProvider);
+			
+			var gasLimit = 150000;
+			
+			//获取通证小数位数
+			var decimals = 0;
+			contract.decimals().then(function(data){
+				decimals = data;
+				var balance =  0;
+				
+				amount = accMul(send_amount,math.pow(10,decimals));
+			
+				contract.transfer(send_address, amount, {gasLimit: gasLimit,}).then(function (data) {
+					
+					var hash = data.hash;
+				
+					mui.openWindow({
+						url:"send-success.html",
+						id:"send-success.html",
+						extras:{
+							hash:hash,
+							amount:send_amount,
+							assets_name:assets_name,
+							send_address:send_address
+						},
+						styles: {
+							popGesture: 'none',
+						},
+						show:{
+							autoShow:true,//页面loaded事件发生后自动显示，默认为true
+							aniShow: 'slide-in-right'
+						},
+						waiting: {
+							autoShow: false
+						}
+					});
+
+					mui("#send-btn").button('reset');
+
+				},function (data) {
+					mui("#send-btn").button('reset');
+					if(data.code == "INSUFFICIENT_FUNDS")
+					{
+						mui.toast("请检查矿工费是否充足");
+					}
+					else if(data.code == "INVALID_ARGUMENT")
+					{
+						mui.toast("转出数量异常");
+					}
+					else
+					{
+						mui.toast("错误代码:"+data.code);
+					}
+				});
+				
+			});
+	
+		}
+
+		//qki转账矿工费
+		function getGasPrice(main_chain)
+		{
+		    var gas = 21000;
+			if(main_chain == "QKI")
+			{
+				var provider = new ethers.providers.JsonRpcProvider({"url":getNodeHost()});
+			}
+			else
+			{
+				var provider = new ethers.providers.EtherscanProvider("homestead","TJDWN2WQI6WF4ERNW4FDXJGB9DSQ881P7J");
+			}
+
+            provider.getGasPrice().then((gasPrice) => {
+                gasPriceString = gasPrice.toString();
+				var fee = ethers.utils.formatEther(math.multiply(gas,gasPriceString));
+				vm.fee = fee;
+            });
+		}
+		
+		//TOKEN转账矿工费
+		function getTokenGasPrice()
+		{
+			var gasPriceWei = ethers.utils.parseUnits('1', 'gwei');
+			let gasLimit = ethers.utils.bigNumberify(100000);
+
+			let maxCostWei = gasPriceWei.mul(gasLimit)
+		
+			var fee = ethers.utils.formatEther(maxCostWei, {commify: true});
+			
+			return fee;
+		}
+		
+	</script>
+</html>

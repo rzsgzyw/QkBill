@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../../css/mui.min.css">
+		<link rel="stylesheet" href="../../css/app.css">
+		<link rel="stylesheet" href="../../fonts/iconfont.css">
+	</head>
+	<body>
+		
+		<header class="mui-bar mui-bar-nav app-header-1" id="header">
+			<!-- <a class="mui-action-back mui-icon icon iconfont icon-return mui-pull-left"></a> -->
+		</header>
+		
+		<nav class="mui-bar mui-bar-tab button-bar">
+			<button type="button" class="create-wallet-btn mui-btn mui-btn-block" id="next-btn">备份钱包</button>
+		</nav>
+		
+		<div class="mui-content" id="content">
+			
+			<div class="create-success-ico">
+				<span class="mui-icon iconfont icon-success_fill"></span>
+			</div>
+			<div class="create-success-text">
+				创建成功
+			</div>
+			<div class="create-success-tip">
+				钱包创建成功，请在使用前将助记词储存到安全地方做好钱包备份。
+			</div>
+			
+		</div>
+		
+	</body>
+	<script src="../../js/mui.min.js"></script>
+	<script src="../../js/immersed.js"></script>
+	<script src="../../js/h.min.js"></script>
+	<script src="../../js/app.js"></script>
+	
+	<script>
+		mui.init({
+			//侧滑关闭
+			swipeBack:false, //Boolean(默认false)启用右滑关闭功能
+			beforeback: function() {
+				return false;
+			},
+		})
+		
+		
+		mui.plusReady(function() {
+			var self = plus.webview.currentWebview();
+			var address = self.address;
+			
+			h("#next-btn").tap(function(){
+				
+				mui.openWindow({
+					url: "start-backups.html",
+					id: "start-backups.html",
+					extras:{
+						address:address
+					},
+					styles: {
+						popGesture: "none"
+					},
+					show:{
+						autoShow:true,
+						aniShow:'slide-in-right',
+					},
+					waiting:{
+						autoShow:false,
+					}
+				});
+				
+			});
+		});
+		
+		
+	</script>
+</html>

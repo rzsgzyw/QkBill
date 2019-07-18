@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../../css/mui.min.css">
+		<link rel="stylesheet" href="../../css/app.css">
+		<link rel="stylesheet" href="../../fonts/iconfont.css">
+	</head>
+	<body>
+		
+		<header class="mui-bar mui-bar-nav app-header-1" id="header" v-cloak>
+			<a class="mui-action-back mui-icon icon iconfont icon-return mui-pull-left"></a>
+			<h1 class="mui-title">{{assets_name}}</h1>
+		</header>
+		
+		<nav class="mui-bar mui-bar-tab transfer-bar">
+			<button type="button" class="tx-in transfer-btn mui-pull-left" id="receive-btn">接收</button>
+			<button type="button" class="tx-out transfer-btn mui-pull-right" id="send-btn">发送</button>
+		</nav>
+		
+		<div class="mui-content assets-inner-content" id="content" v-cloak>
+			
+			<div class="assets-bar">
+				
+				<div class="box">
+					<div class="assets-amount mui-pull-left">
+						{{amount}} <span>{{assets_name}}</span>
+					</div>
+					<span class="assets-ico mui-pull-right icon iconfont qki">
+						
+				</div>
+			</div>
+			
+			<div class="transfer-log">
+				
+				<div class="title">
+					交易记录
+				</div>
+				
+				<div class="no-data-tip" id="no-data-tip" style="display: none;">
+					<span class="mui-icon icon iconfont icon-createtask"></span>
+					<p>暂无交易</p>
+				</div>
+				
+				<div class="list">
+					<div class="item copy-text" :data-hash="item.hash" v-for="item in logList" v-on:tap="blockBrowser(item.hash)">
+						<span class="mui-icon mui-icon-arrowthinup" v-if="item.amount <= 0"></span>
+						<span class="mui-icon mui-icon-arrowthindown" v-if="item.amount > 0"></span>
+						
+						<span class="status" v-if="item.tx_status == 1 && item.amount <= 0">发送成功</span>
+						<span class="status" v-if="item.tx_status == 1 && item.amount > 0">接收成功</span>
+						<span class="status" v-if="item.tx_status != 1 && item.amount < 0">发送失败</span>
+						<span class="status" v-if="item.tx_status != 1 && item.amount > 0">接收失败</span>
+						
+						<div class="mui-pull-right amount-time">
+							<p class="amount out" v-if="item.amount <= 0">
+								{{parseFloat(item.amount).toFixed(8).replace(/[.]?0+$/,"")}} {{assets_name}}
+							</p>
+							<p class="amount in" v-if="item.amount > 0">
+								{{parseFloat(item.amount).toFixed(8).replace(/[.]?0+$/,"")}}  {{assets_name}}
+							</p>
+							<p class="time">
+								{{item.created_at}}
+							</p>
+						</div>
+					</div>
+					
+				</div>
+			</div>
+				
+		</div>
+			
+		
+	</body>
+	<script src="../../js/mui.min.js"></script>
+	<script src="../../js/immersed.js"></script>
+	<script src="../../js/h.min.js"></script>
+	<script src="../../js/math.min.js"></script>
+	<script src="../../js/vue.min.js"></script>
+	<script src="../../js/app.js"></script>
+	<script src="../../js/ethers.min.js"></script>
+	
+	<script>
+		mui.init({
+			gestureConfig: {
+				longtap: true, //默认为false
+			},
+			swipeBack:true //启用右滑关闭功能
+		});
+		var address = "";
+		var assets_name = "";
+		mui.plusReady(function() {
+			
+			var self = plus.webview.currentWebview();
+			address = self.address;
+			assets_name = self.assets_name;
+			main_chain = self.main_chain;
+			//获取资产
+			var assets = getAssets(address,assets_name,main_chain);
+			
+			//获取交易记录
+			getLog(address,assets.token_address,assets.main_chain);
+			
+			vm_header = new Vue({
+				el: '#header',
+				data: {
+					assets_name:assets_name,
+				}
+			});
+			
+			vm = new Vue({
+				el: '#content',
+				data: {
+					assets_name:assets_name,
+					amount:0,
+					logList:[]
+				},
+				methods: {
+					
+					blockBrowser: function (hash) {
+						
+						mui.openWindow({
+							url: "tx-info.html",
+							id: "tx-info.html",
+							extras:{
+								tx_hash:hash,
+							},
+							show:{
+								autoShow:true,
+								aniShow:'slide-in-right',
+							},
+							waiting:{
+								autoShow:false,
+							}
+						});
+						
+					},
+				}
+			});
+			mui('body').on('longtap', '.copy-text', function () {
+				var hash = this.getAttribute('data-hash');
+				if (mui.os.ios) 
+				{
+					var UIPasteboard  = plus.ios.importClass("UIPasteboard");
+					var generalPasteboard = UIPasteboard.generalPasteboard();
+					// 设置/获取文本内容:
+					generalPasteboard.setValueforPasteboardType(hash, "public.utf8-plain-text");
+					var value = generalPasteboard.valueForPasteboardType("public.utf8-plain-text");
+					mui.toast("Hash已复制")
+				}
+				else
+				{
+					var Context = plus.android.importClass("android.content.Context");
+					var main = plus.android.runtimeMainActivity();
+					var clip = main.getSystemService(Context.CLIPBOARD_SERVICE);
+					plus.android.invoke(clip,"setText",hash);
+					mui.toast("Hash已复制")
+				}
+			});
+			
+			document.getElementsByClassName('assets-ico')[0].classList.add(assets.icon);
+		
+
+			vm.amount = assets.amount;
+			
+			//跳转到接收页面
+			h("#receive-btn").tap(function(){
+				
+				mui.openWindow({
+					url: "receive.html",
+					id: "receive.html",
+					extras:{
+						assets_name:assets_name,
+						address:address
+					},
+					show:{
+						autoShow:true,
+						aniShow:'slide-in-right',
+					},
+					waiting:{
+						autoShow:false,
+					}
+				});
+				
+			});
+			
+			h("#send-btn").tap(function(){
+				
+				//不是从扫码进入的转账流程
+				localStorage.setItem("send-type",0);
+				mui.openWindow({
+					url: "send-step-1.html",
+					id: "send-step-1.html",
+					extras:{
+						assets_name:assets_name,
+						main_chain:main_chain,
+						address:address
+					},
+					show:{
+						autoShow:true,
+						aniShow:'slide-in-right',
+					},
+					waiting:{
+						autoShow:false,
+					},
+				});
+				
+			});
+			
+		})
+		
+		//获取交易记录
+		function getLog(address,token,main_chain="QKI")
+		{
+			if(token == "")
+			{
+				if(main_chain == "QKI")
+				{
+					mui.ajax('http://new-block-browser.quarkblockchain.cn/api/get-qki-tx',{
+						data:{
+							address:address,
+							page:1,
+							pageSize:20
+						},
+						dataType:'json',//服务器返回json格式数据
+						type:'get',//HTTP请求类型
+						timeout:10000,//超时时间设置为10秒；              
+						success:function(data){
+							
+							if(data.code == 0)
+							{
+								var logList = data.data;
+								if(logList.length < 1)
+								{
+									document.getElementById("no-data-tip").style.display = "block";
+								}
+								else
+								{
+									vm.logList = logList;
+									document.getElementById("no-data-tip").style.display = "none";
+								}
+								
+							}
+							else
+							{
+								document.getElementById("no-data-tip").style.display = "block";
+							}
+						},
+						error:function(xhr,type,errorThrown){
+							
+							mui.toast("网络错误");
+						}
+					});
+				}
+				else
+				{
+					
+					mui.ajax('https://api.etherscan.io/api',{
+						data:{
+							address:address,
+							module:'account',
+							action:'txlist',
+							startblock:0,
+							endblock:99999999,
+							sort:'desc',
+							apikey:'TJDWN2WQI6WF4ERNW4FDXJGB9DSQ881P7J'
+						},
+						dataType:'json',//服务器返回json格式数据
+						type:'get',//HTTP请求类型
+						timeout:10000,//超时时间设置为10秒；              
+						success:function(data){
+							
+							if(data.status == '1')
+							{
+								var data = data.result;
+								var logList = [];
+								for(var i in data)
+								{
+									if(data[i]['from'].toLowerCase() == address.toLowerCase())
+									{
+										amount = 0-ethers.utils.formatEther(data[i]['value']);
+									}
+									else
+									{
+										amount = ethers.utils.formatEther(data[i]['value']);
+									}
+									
+									var timeTrans = new Date(parseInt(parseInt(data[i]['timeStamp'])) *1000);
+									created_at = timeTrans.toLocaleString('chinese',{hour12:false})
+									
+									hash = data[i]['hash'];
+									from_address = data[i]['from'];
+									to_address = data[i]['to'];
+									tx_status = parseInt(data[i]['txreceipt_status']);
+									
+									logList.push(
+										{
+											amount:amount,
+											created_at:created_at,
+											hash:hash,
+											from:from_address,
+											to:to_address,
+											tx_status:tx_status
+										}
+									);
+								}
+								
+								if(logList.length < 1)
+								{
+									document.getElementById("no-data-tip").style.display = "block";
+								}
+								else
+								{
+									vm.logList = logList;
+									document.getElementById("no-data-tip").style.display = "none";
+								}
+								
+							}
+							else
+							{
+								document.getElementById("no-data-tip").style.display = "block";
+							}
+						},
+						error:function(xhr,type,errorThrown){
+							
+							mui.toast("网络错误");
+						}
+					});
+					
+				}
+				
+			}
+			else
+			{
+				if(main_chain == "QKI")
+				{
+					mui.ajax('http://new-block-browser.quarkblockchain.cn/api/get-token-tx',{
+						data:{
+							address:address,
+							contract_address:token,
+							page:1,
+							pageSize:20
+						},
+						dataType:'json',//服务器返回json格式数据
+						type:'get',//HTTP请求类型
+						timeout:10000,//超时时间设置为10秒；              
+						success:function(data){
+			
+							if(data.code == 0)
+							{
+								var logList = data.data;
+								if(logList.length < 1)
+								{
+									document.getElementById("no-data-tip").style.display = "block";
+								}
+								else
+								{
+									vm.logList = logList;
+									document.getElementById("no-data-tip").style.display = "none";
+								}
+							}
+							else
+							{
+								document.getElementById("no-data-tip").style.display = "block";
+							}
+						},
+						error:function(xhr,type,errorThrown){
+							
+							mui.toast("网络错误");
+						}
+					});
+				}
+				else
+				{
+					mui.ajax('https://api.etherscan.io/api',{
+						data:{
+							address:address,
+							contractaddress:token,
+							module:'account',
+							action:'tokentx',
+							page:1,
+							offset:100,
+							sort:'desc',
+							apikey:'TJDWN2WQI6WF4ERNW4FDXJGB9DSQ881P7J'
+						},
+						dataType:'json',//服务器返回json格式数据
+						type:'get',//HTTP请求类型
+						timeout:10000,//超时时间设置为10秒；              
+						success:function(data){
+							
+							if(data.status == '1')
+							{
+								var data = data.result;
+								var logList = [];
+								for(var i in data)
+								{
+									if(data[i]['from'].toLowerCase() == address.toLowerCase())
+									{
+										var value = ethers.utils.bigNumberify(data[i]['value']);
+										amount = 0 - value.div(Math.pow(10,data[i]['tokenDecimal'])).toNumber();
+									}
+									else
+									{
+										var value = ethers.utils.bigNumberify(data[i]['value']);
+										amount = value.div(Math.pow(10,data[i]['tokenDecimal'])).toNumber();
+									}
+									
+									var timeTrans = new Date(parseInt(parseInt(data[i]['timeStamp'])) *1000);
+									created_at = timeTrans.toLocaleString('chinese',{hour12:false})
+									
+									hash = data[i]['hash'];
+									from_address = data[i]['from'];
+									to_address = data[i]['to'];
+									tx_status = 1;
+									
+									logList.push(
+										{
+											amount:amount,
+											created_at:created_at,
+											hash:hash,
+											from:from_address,
+											to:to_address,
+											tx_status:tx_status
+										}
+									);
+								}
+								
+								if(logList.length < 1)
+								{
+									document.getElementById("no-data-tip").style.display = "block";
+								}
+								else
+								{
+									vm.logList = logList;
+									document.getElementById("no-data-tip").style.display = "none";
+								}
+								
+							}
+							else
+							{
+								document.getElementById("no-data-tip").style.display = "block";
+							}
+						},
+						error:function(xhr,type,errorThrown){
+							
+							mui.toast("网络错误");
+						}
+					});
+				}
+				
+			}
+			
+		}
+		
+	</script>
+</html>

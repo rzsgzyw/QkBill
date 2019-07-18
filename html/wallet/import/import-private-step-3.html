@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../../../css/mui.min.css">
+		<link rel="stylesheet" href="../../../css/app.css">
+		<link rel="stylesheet" href="../../../fonts/iconfont.css">
+	</head>
+	<body>
+		
+		<header class="mui-bar mui-bar-nav app-header-1" id="header">
+			<a class="mui-action-back mui-icon icon iconfont icon-return mui-pull-left"></a>
+		</header>
+		
+		<nav class="mui-bar mui-bar-tab button-bar">
+			<p>阅读并同意《QkBill服务条款》</p>
+			<button type="button"  data-loading-text="导入中,请稍等" class="create-wallet-btn mui-btn mui-btn-block" id="next-btn">同意并创建</button>
+		</nav>
+		
+		<div class="mui-content" id="content">
+			
+			<div class="title-bar-1">
+				<span class="mui-pull-left title">导入个人钱包</span>
+			</div>
+			
+			<div class="create-wallet-tip">
+				
+				<span class="mui-icon icon iconfont icon-unlock_fill mui-pull-left"></span>
+				<div class="inner mui-pull-left">
+					请牢记你的密码！QkBill 不存储用户密码，无法提供找回密码功能。
+				</div>
+				
+			</div>
+			
+			<div class="create-wallet-box">
+				
+				<form class="mui-input-group">
+					<div class="mui-input-row item">
+						<p class="title">输入钱包密码</p>
+						<input type="password" id="password" placeholder="请输入6到20位字符">
+					</div>
+					<div class="mui-input-row item">
+						<p class="title">确认钱包密码</p>
+						<input type="password" id="password2" placeholder="请输入">
+					</div>
+				</form>
+				
+			</div>
+			
+			
+		</div>
+		
+	
+	</body>
+	<script src="../../../js/mui.min.js"></script>
+	<script src="../../../js/immersed.js"></script>
+	<script src="../../../js/h.min.js"></script>
+	<script src="../../../js/app.js"></script>
+	<script src="../../../js/ethers.min.js"></script>
+	
+	<script>
+		mui.init({
+			swipeBack:true //启用右滑关闭功能
+		});
+		var wallet_name = "";
+		var monic = "";
+		
+		
+		mui.plusReady(function() {
+			
+			var accounts = plus.storage.getItem('accounts');
+			if(!accounts)
+			{
+				accounts = new Array();
+			}
+			else
+			{
+				accounts = JSON.parse(accounts);
+			}
+			var self = plus.webview.currentWebview();
+			wallet_name = self.wallet_name;
+			private_key = self.private_key;
+			
+			h("#next-btn").tap(function(){
+			
+				var password = document.getElementById("password").value;
+				var password2 = document.getElementById("password2").value;
+			
+				
+				if(password.length < 6)
+				{
+					mui.toast("密码不能少于6位");
+					return false;
+				}
+				if(password != password2)
+				{
+					mui.toast("两次密码不一致");
+					return false;
+				}
+
+				mui(this).button('loading');
+				setTimeout(function() {
+					importWallet(password);
+					mui(this).button('reset');
+					
+				}.bind(this), 2000);
+				
+			});
+			
+		});
+		
+		
+		function importWallet(password)
+		{
+			if(wallet_name.length < 6 || wallet_name.length > 20)
+			{
+				mui.toast("钱包ID长度为6到20位");
+				return false;
+			}
+			
+			
+			var exists = false;
+			for(var i in accounts)
+			{
+				if(wallet_name == accounts[i].wallet_name )
+				{
+					exists = true;
+					break;
+				}
+			}
+			if(exists == true)
+			{
+				mui.toast("你已使用过此钱包ID");
+				return false;
+			}
+			
+			
+			//如果存在此私钥,则更新钱包名和密码
+			var exists = false;
+			var accounts = plus.storage.getItem('accounts');
+			if(!accounts)
+			{
+				accounts = new Array();
+			}
+			else
+			{
+				accounts = JSON.parse(accounts);
+			}
+			for(var i in accounts)
+			{
+				if(private_key == accounts[i].private_key )
+				{
+					accounts[i].wallet_name = wallet_name;
+					accounts[i].password = password;
+					exists = true;
+					break;
+				}
+			}
+			//如果存在此私钥,直接跳转
+			if(exists)
+			{
+				plus.storage.setItem("accounts",JSON.stringify(accounts));
+				mui.openWindow({
+					url: "import-private-success.html",
+					id: "import-private-success.html",
+					styles: {
+						popGesture: "none"
+					},
+					show:{
+						autoShow:true,
+						aniShow:'slide-in-right',
+					},
+					waiting:{
+						autoShow:false,
+					}
+				});
+				
+				return false;
+			}
+			else
+			{
+				//根据私钥找回钱包
+				var wallet = new ethers.Wallet(private_key);
+				
+				if(accounts.length > 0)
+				{
+					var wallet_default = 0;
+				}
+				else
+				{
+					var wallet_default = 1;
+				}
+				accounts.push(
+					{
+						wallet_name:wallet_name,
+						private_key:wallet.privateKey,
+						mnemonic:"",
+						address:wallet.address,
+						wallet_default:wallet_default,
+						password:password,
+						assets_amount:0,
+						is_back:0
+					}
+				);
+				
+				for(var j in commonAssetsList)
+				{
+					commonAssetsList[j].address = wallet.address;
+				}
+				
+				
+				plus.storage.setItem("accounts",JSON.stringify(accounts));
+				plus.storage.setItem(wallet.address+"-assets",JSON.stringify(commonAssetsList));
+				
+				mui.openWindow({
+					url: "import-private-success.html",
+					id: "import-private-success.html",
+					styles: {
+						popGesture: "none"
+					},
+					show:{
+						autoShow:true,
+						aniShow:'slide-in-right',
+					},
+					waiting:{
+						autoShow:false,
+					}
+				});
+				
+			}
+		}
+		
+	</script>
+</html>

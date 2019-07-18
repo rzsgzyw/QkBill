@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../../css/mui.min.css">
+		<link rel="stylesheet" href="../../css/app.css">
+		<link rel="stylesheet" href="../../fonts/iconfont.css">
+	</head>
+	<body>
+		
+		<header class="mui-bar mui-bar-nav app-header-1" id="header">
+			<a class="mui-action-back mui-icon icon iconfont icon-return mui-pull-left"></a>
+			<h1 class="mui-title">编辑联系人</h1>
+			<a class="mui-icon mui-icon-text mui-pull-right" id="save-btn">保存</a>
+		</header>
+		
+		<nav class="mui-bar mui-bar-tab button-bar">
+			<a class="mui-btn mui-btn-block del-btn" id="del-btn">删除联系人</a>
+		</nav>
+		
+		<div class="mui-content" id="content">
+			
+			<form class="mui-input-group input-box">
+				
+				<div class="mui-input-row item edit-address-item">
+					<p class="title">数字资产地址</p>
+					<input type="text" id="address" placeholder="请输入" readonly="" value="">
+				</div>
+				<div class="mui-input-row item">
+					<p class="title">名称</p>
+					<input type="text" id="username" placeholder="请输入" value="">
+				</div>
+				<div class="mui-input-row item">
+					<p class="title">备注</p>
+					<input type="text" id="remark" placeholder="请输入" value="">
+				</div>
+				
+			</form>
+			
+		</div>
+		
+	</body>
+	<script src="../../js/mui.min.js"></script>
+	<script src="../../js/immersed.js"></script>
+	<script src="../../js/h.min.js"></script>
+	<script src="../../js/app.js"></script>
+	
+	<script>
+		mui.init({
+			swipeBack:true //启用右滑关闭功能
+		});
+		mui.plusReady(function() {
+			var self = plus.webview.currentWebview();
+			address = self.address;
+			
+			var contacts = getContactsByAddress(address);
+			
+			document.getElementById("address").value = contacts.address;
+			document.getElementById("username").value = contacts.username;
+			document.getElementById("remark").value = contacts.remark;
+			
+			//保存联系人
+			h("#save-btn").tap(function(){
+				
+				var username = document.getElementById("username").value;
+				var remark = document.getElementById("remark").value;
+				
+				
+				var contacts = plus.storage.getItem('contacts');
+				if(!contacts)
+				{
+					contacts = new Array();
+				}
+				else
+				{
+					contacts = JSON.parse(contacts);
+				}
+				
+				var exists = false;
+				for(var i in contacts)
+				{
+					if(username == contacts[i].username )
+					{
+						exists = true;
+						break;
+					}
+				}
+				if(exists == true)
+				{
+					mui.toast("此名称已使用");
+					return false;
+				}
+				
+				for(var i in contacts)
+				{
+					if(address == contacts[i].address )
+					{
+						contacts[i].username =  username;
+						contacts[i].head =  username.substr(0,1);
+						contacts[i].remark =  remark;
+					}
+				}
+				
+				plus.storage.setItem("contacts",JSON.stringify(contacts));
+				mui.toast("保存成功");
+				var contactsPage = plus.webview.getWebviewById("contacts-inner.html");
+				mui.fire(contactsPage,'fresh-contacts');
+				var contactsPage = plus.webview.getWebviewById("tab-subpage-contacts.html");
+				mui.fire(contactsPage,'fresh-contacts');
+				mui.back();
+				
+			})
+			
+			//删除联系人
+			h("#del-btn").tap(function(){
+				
+				var btnArray = ['取消', '删除'];
+				mui.confirm('确定要删除该联系人吗？', '提示', btnArray, function(e) {
+					
+					if (e.index == 1) {
+						
+						var contacts = plus.storage.getItem('contacts');
+						if(!contacts)
+						{
+							contacts = new Array();
+						}
+						else
+						{
+							contacts = JSON.parse(contacts);
+						}
+						
+						
+						for(var i in contacts)
+						{
+							if(address == contacts[i].address )
+							{
+								contacts.splice(i,1);
+							}
+						}
+						
+						plus.storage.setItem("contacts",JSON.stringify(contacts));
+						mui.toast("删除成功");
+						var contactsPage = plus.webview.getWebviewById("tab-subpage-contacts.html");
+						mui.fire(contactsPage,'fresh-contacts');
+						
+						plus.webview.getWebviewById('contacts-inner.html').close();
+						//获得主页面的webview
+						var main = plus.webview.getLaunchWebview();
+						//触发主页面的gohome事件
+						mui.fire(main,'gocontacts');
+						var self = plus.webview.currentWebview();
+						self.close();
+						main.show();
+						
+					}
+					
+				})
+				
+			})
+			
+		})
+	</script>
+</html>

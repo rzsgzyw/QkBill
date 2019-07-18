@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../../css/mui.min.css">
+		<link rel="stylesheet" href="../../css/app.css">
+		<link rel="stylesheet" href="../../fonts/iconfont.css">
+	</head>
+	<body>
+		
+		<header class="mui-bar mui-bar-nav app-header-1" id="header">
+			<a class="mui-action-back mui-icon icon iconfont icon-return mui-pull-left"></a>
+			<h1 class="mui-title">助记词</h1>
+		</header>
+		
+		<nav class="mui-bar mui-bar-tab button-bar">
+			<button type="button" class="create-wallet-btn mui-btn mui-btn-block" id="next-btn">已按顺序记下助记词</button>
+		</nav>
+		
+		<div class="mui-content" id="content">
+			
+			
+			<div class="create-wallet-tip">
+				
+				<span class="mui-icon icon iconfont icon-text mui-pull-left"></span>
+				<div class="inner mui-pull-left">
+					请抄写如下助记词，并妥善保管。助记词的顺序也很重要，我们会在下一个屏幕上确认！
+				</div>
+				
+			</div>
+			
+			<div class="backups-inner" id="mnemonic">
+				
+				
+				
+			</div>
+			
+		</div>
+		
+		<div class="mui-popover verify-password-box">
+			
+			<div class="title">
+				输入钱包密码
+			</div>
+			
+			<div class="wallet-name" id="wallet-name">
+				
+			</div>
+			
+			<div class="input-item">
+				<input type="password" name="" id="password" value="" />
+			</div>
+			
+			<p class="tip" id="password-tip" style="display: none;">
+				密码输入错误
+			</p>
+			
+			<button type="button" class="send-btn mui-btn mui-btn-block" data-loading-text="验证中,请稍等" id="verify-btn">确定</button>
+			<button type="button" class="cancel-btn mui-btn mui-btn-block" id="cancel-btn">取消</button>
+			
+		</div>
+		
+	</body>
+	<script src="../../js/mui.min.js"></script>
+	<script src="../../js/immersed.js"></script>
+	<script src="../../js/h.min.js"></script>
+	<script src="../../js/app.js"></script>
+	
+	<script>
+		mui.init({
+			swipeBack:true //启用右滑关闭功能
+		});
+		
+		var nativeWebview, imm, InputMethodManager;
+		var initNativeObjects = function() {
+			if (mui.os.android) {
+				var main = plus.android.runtimeMainActivity();
+				var Context = plus.android.importClass("android.content.Context");
+				InputMethodManager = plus.android.importClass("android.view.inputmethod.InputMethodManager");
+				imm = main.getSystemService(Context.INPUT_METHOD_SERVICE);
+			} else {
+				nativeWebview = plus.webview.currentWebview().nativeInstanceObject();
+			}
+		};
+		var showSoftInput = function() {
+			if (mui.os.android) {
+				imm.toggleSoftInput(0, InputMethodManager.SHOW_FORCED);
+			} else {
+				nativeWebview.plusCallMethod({
+					"setKeyboardDisplayRequiresUserAction": false
+				});
+			}
+			setTimeout(function() {
+				var inputElem = document.getElementById("password");
+				inputElem.focus();
+			}, 500);
+		};
+		
+		mui('.verify-password-box').popover('show');
+		
+		
+		mui.plusReady(function() {
+			plus.webview.currentWebview().setStyle({
+				softinputMode: "adjustResize"
+			});
+			
+			var self = plus.webview.currentWebview();
+			var address = self.address;
+			
+			var wallet = getWallet(address);
+			
+			var wallet_name = wallet.wallet_name;
+			var mnemonic = wallet.mnemonic;
+			
+			document.getElementById("wallet-name").innerHTML = wallet_name;
+			
+			initNativeObjects();
+			showSoftInput();
+			
+			h("#verify-btn").tap(function(){
+				var password = document.getElementById("password").value;
+				
+				mui("#verify-btn").button('loading');
+				setTimeout(function() {
+					
+					if(password != wallet.password)
+					{
+						document.getElementById("password-tip").style.display="block";
+						showSoftInput();
+						mui("#verify-btn").button('reset');
+						return false;
+					}
+					document.getElementById("password-tip").style.display="none";
+					mui('.verify-password-box').popover('hide');
+					document.getElementById("mnemonic").innerHTML = mnemonic;
+					document.activeElement.blur(); 
+					mui("#verify-btn").button('reset');
+					
+				}.bind(this), 2000);
+				
+			})
+			
+		})
+		
+		
+		h("#cancel-btn").tap(function(){
+			
+			plus.storage.setItem("is_create",1);
+			mui.back();
+			
+		});
+		
+		h("#next-btn").tap(function(){
+			
+			mui.openWindow({
+				url: "backups-verify.html",
+				id: "backups-verify.html",
+				show:{
+					autoShow:true,
+					aniShow:'slide-in-right',
+				},
+				waiting:{
+					autoShow:false,
+				}
+			});
+			
+		});
+	</script>
+</html>

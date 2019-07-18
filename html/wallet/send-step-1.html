@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../../css/mui.min.css">
+		<link rel="stylesheet" href="../../css/app.css">
+		<link rel="stylesheet" href="../../fonts/iconfont.css">
+	</head>
+	<body>
+		
+		<header class="mui-bar mui-bar-nav app-header-1" id="header">
+			<a class="mui-action-back mui-icon icon iconfont icon-return mui-pull-left"></a>
+			<h1 class="mui-title">发送</h1>
+			<a class="mui-icon icon iconfont icon-scan mui-pull-right" id="scan-btn"></a>
+		</header>
+		
+		<div class="mui-content" id="content" v-cloak>
+			
+			<div class="receive-send-box">
+				
+				<div class="assets-name">
+					{{assets_name}}
+				</div>
+				
+				<div class="wallet">
+					发送钱包 <span>{{wallet_name}}</span>
+				</div>
+				
+				<div class="send-box">
+					
+					<form class="mui-input-group">
+						<div class="mui-input-row item">
+							<input type="text" id="address" placeholder="接收方">
+							<span class="mui-icon icon iconfont icon-addressbook_fill" id="select-contacts-btn"></span>
+						</div>
+					</form>
+					
+					<button type="button" class="send-btn mui-btn mui-btn-block" id="next-btn">下一步</button>
+					
+				</div>
+				
+			</div>
+			
+		</div>
+		
+	</body>
+	<script src="../../js/mui.min.js"></script>
+	<script src="../../js/immersed.js"></script>
+	<script src="../../js/h.min.js"></script>
+	<script src="../../js/vue.min.js"></script>
+	<script src="../../js/app.js"></script>
+	
+	<script>
+		mui.init({
+			swipeBack:true //启用右滑关闭功能
+		});
+	
+		mui.plusReady(function() {
+			
+			var self = plus.webview.currentWebview();
+			address = self.address;
+			assets_name = self.assets_name;
+			main_chain = self.main_chain;
+			
+			wallet = getWallet(address);
+			
+			vm = new Vue({
+				el: '#content',
+				data: {
+					assets_name:assets_name,
+					wallet_name:wallet.wallet_name
+				}
+			});
+			
+			if(self.receive_address)
+			{
+				h('#address').val(self.receive_address);
+			}
+			
+			
+			h("#next-btn").tap(function(){
+				
+				var receive_address = document.getElementById("address").value;
+				
+				if(receive_address == address)
+				{
+					mui.toast("不能转账给自己");
+					return false;
+				}
+
+				if(receive_address.length != 42)
+				{
+					mui.toast("请正确的输入钱包地址");
+					return false;
+				}
+
+				if(receive_address.substr(0,2) != "0x")
+				{
+					mui.toast("地址开头一般为0x开头的42位字符");
+					return false;
+				}
+				
+				mui.openWindow({
+					url: "send-step-2.html",
+					id: "send-step-2.html",
+					extras:{
+						assets_name:assets_name,
+						address:address,
+						main_chain:main_chain,
+						receive_address:receive_address
+					},
+					show:{
+						autoShow:true,
+						aniShow:'slide-in-right',
+					},
+					waiting:{
+						autoShow:false,
+					},
+				});
+				
+			});
+			
+			h("#select-contacts-btn").tap(function(){
+				plus.storage.setItem("contacts_address","");
+				
+				mui.openWindow({
+					url: "../contacts/select-contacts.html",
+					id: "select-contacts.html",
+					show:{
+						autoShow:true,
+						aniShow:'slide-in-right',
+					},
+					waiting:{
+						autoShow:false,
+					},
+				});
+			});
+			
+			h("#scan-btn").tap(function(){
+				plus.storage.setItem("contacts_address","");
+				
+				mui.openWindow({
+					url: "scan/scan-2.html",
+					id: "scan-2.html",
+					show:{
+						autoShow:true,
+						aniShow:'slide-in-right',
+					},
+					waiting:{
+						autoShow:false,
+					},
+				});
+			});
+			
+		})
+		
+		
+		//定义首页刷新事件
+		document.addEventListener('contacts-address', function() {
+			document.activeElement.blur();
+			document.getElementById("address").value = plus.storage.getItem("contacts-address");
+		});
+		
+	</script>
+</html>

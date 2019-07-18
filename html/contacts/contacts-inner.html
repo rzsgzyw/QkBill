@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../../css/mui.min.css">
+		<link rel="stylesheet" href="../../css/app.css">
+		<link rel="stylesheet" href="../../fonts/iconfont.css">
+	</head>
+	<body>
+		
+		<header class="mui-bar mui-bar-nav app-header-1" id="header">
+			<a class="mui-action-back mui-icon icon iconfont icon-return mui-pull-left"></a>
+			<h1 class="mui-title">联系人详情</h1>
+			<a class="mui-icon mui-icon-text mui-pull-right" id="edit-btn">编辑</a>
+		</header>
+		
+		<nav class="mui-bar mui-bar-tab button-bar">
+			<button type="button" class="create-wallet-btn mui-btn mui-btn-block" id="send-btn">发送</button>
+		</nav>
+		
+		<div class="mui-content" id="content" v-cloak>
+			
+			<div class="contacts-username">
+				<div class="contacts-head">
+					{{head}}
+				</div>
+				<p class="name">{{username}}</p>
+			</div>
+			
+			<div class="contacts-inner">
+				<div class="item">
+					<p class="title">钱包地址</p>
+					<p class="value">{{address}}</p>
+				</div>
+				<div class="item">
+					<p class="title">备注</p>
+					<p class="value">{{remark}}</p>
+				</div>
+				<input type="hidden" name="" id="address" value="" />
+			</div>
+			
+		</div>
+		
+	</body>
+	<script src="../../js/mui.min.js"></script>
+	<script src="../../js/immersed.js"></script>
+	<script src="../../js/h.min.js"></script>
+	<script src="../../js/vue.min.js"></script>
+	<script src="../../js/app.js"></script>
+	
+	<script>
+		mui.init({
+			swipeBack:true //启用右滑关闭功能
+		});
+		
+		var address = "";
+		
+		vm = new Vue({
+			el: '#content',
+			data: {
+				head:"",
+				username:"",
+				address:"",
+				remark:""
+			},
+		});
+		
+		mui.plusReady(function() {
+			var self = plus.webview.currentWebview();
+			address = self.address;
+
+			var contacts = getContactsByAddress(address);
+			
+			var head = contacts.head;
+			var username = contacts.username;
+			var address = contacts.address;
+			var remark = contacts.remark;
+			
+			vm.head = head;
+			vm.username = username;
+			vm.address = address;
+			vm.remark = remark;
+			
+			document.getElementById("address").value = address;
+			
+			
+			h("#edit-btn").tap(function(){
+				
+				mui.openWindow({
+					url: "edit-contacts.html",
+					id: "edit-contacts.html",
+					extras:{
+						address:address
+					},
+					show:{
+						autoShow:true,
+						aniShow:'slide-in-right',
+					},
+					waiting:{
+						autoShow:false,
+					}
+				});
+				
+			});
+			
+			h("#send-btn").tap(function(){
+				
+				var address = "";
+				var accounts = plus.storage.getItem('accounts');			
+				if(!accounts)
+				{
+					accounts = new Array();
+				}
+				else
+				{
+					accounts = JSON.parse(accounts);
+				}
+				for(var i in accounts)
+				{
+					if(accounts[i].wallet_default == 1)
+					{
+						address = accounts[i].address;
+					}
+				}
+				localStorage.setItem("send-type",3);
+				mui.openWindow({
+					url: '../wallet/send-step-1.html',
+					id: 'send-step-1.html',
+					extras:{
+						address:address,
+						main_chain:"QKI",
+						assets_name:"QKI",
+						receive_address:contacts.address
+					},
+					show: {
+						autoShow:true,
+					},
+					waiting: {
+						autoShow: false
+					}
+				});
+				
+			})
+		});
+		
+		
+		
+		document.addEventListener('fresh-contacts', function() {
+			
+			address = document.getElementById("address").value;
+			
+			var contacts = getContactsByAddress(address);
+			
+			var head = contacts.head;
+			var username = contacts.username;
+			var address = contacts.address;
+			var remark = contacts.remark;
+			
+			vm.head = head;
+			vm.username = username;
+			vm.address = address;
+			vm.remark = remark;
+		});
+		
+		
+	</script>
+</html>

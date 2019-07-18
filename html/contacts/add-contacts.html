@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../../css/mui.min.css">
+		<link rel="stylesheet" href="../../css/app.css">
+		<link rel="stylesheet" href="../../fonts/iconfont.css">
+	</head>
+	<body>
+		
+		<header class="mui-bar mui-bar-nav app-header-1" id="header">
+			<a class="mui-action-back mui-icon icon iconfont icon-return mui-pull-left"></a>
+			<h1 class="mui-title">添加联系人</h1>
+			<a class="mui-icon mui-icon-text mui-pull-right" id="add-btn">保存</a>
+		</header>
+		
+		<div class="mui-content" id="content">
+			
+			<form class="mui-input-group input-box">
+				<div class="mui-input-row item">
+					<p class="title">名称</p>
+					<input type="text" id="username" placeholder="请输入">
+				</div>
+				<div class="mui-input-row item">
+					<p class="title">数字资产地址</p>
+					<input type="text" id="address" placeholder="请输入">
+				</div>
+				<div class="mui-input-row item">
+					<p class="title">备注</p>
+					<input type="text" id="remark" placeholder="请输入">
+				</div>
+			</form>
+			
+		</div>
+		
+	</body>
+	<script src="../../js/mui.min.js"></script>
+	<script src="../../js/immersed.js"></script>
+	<script src="../../js/h.min.js"></script>
+	<script src="../../js/app.js"></script>
+	
+	<script>
+		mui.init({
+			swipeBack:true //启用右滑关闭功能
+		});
+		
+		mui.plusReady(function() {
+			var self = plus.webview.currentWebview();
+			address = self.address;
+			if(address)
+			{
+				document.getElementById("address").value = address;
+			}
+		})
+		
+		//添加联系人
+		h("#add-btn").tap(function(){
+			
+			var username = document.getElementById("username").value;
+			var address = document.getElementById("address").value;
+			var remark = document.getElementById("remark").value;
+			
+			if(username == "")
+			{
+				mui.toast("请输入名称");
+				return false;
+			}
+
+			if(address.length != 42)
+			{
+				mui.toast("请正确的输入钱包地址");
+				return false;
+			}
+
+			if(address.substr(0,2) != "0x")
+			{
+				mui.toast("地址开头一般为0x开头的42位字符");
+				return false;
+			}
+			
+			var contacts = plus.storage.getItem('contacts');
+			if(!contacts)
+			{
+				contacts = new Array();
+			}
+			else
+			{
+				contacts = JSON.parse(contacts);
+			}
+			
+			var exists = false;
+			for(var i in contacts)
+			{
+				if(username == contacts[i].username )
+				{
+					exists = true;
+					break;
+				}
+			}
+			if(exists == true)
+			{
+				mui.toast("此名称已使用");
+				return false;
+			}
+			exists = false;
+			for(var i in contacts)
+			{
+				if(address == contacts[i].address )
+				{
+					exists = true;
+					break;
+				}
+			}
+			if(exists == true)
+			{
+				mui.toast("此地址已添加");
+				return false;
+			}
+			
+			contacts.push(
+				{
+					username:username,
+					head:username.substr(0,1),
+					address:address,
+					remark:remark,
+				}
+			);
+			
+			plus.storage.setItem("contacts",JSON.stringify(contacts));
+			mui.toast("添加成功");
+			
+			
+			var contactsPage = plus.webview.getWebviewById("tab-subpage-contacts.html");
+			mui.fire(contactsPage,'fresh-contacts');
+			mui.back();
+			
+		})
+		
+	</script>
+</html>

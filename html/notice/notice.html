@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../../css/mui.min.css">
+		<link rel="stylesheet" href="../../css/app.css">
+		<link rel="stylesheet" href="../../fonts/iconfont.css">
+	</head>
+	<body class="manage-wallet-page">
+		
+		<header class="mui-bar mui-bar-nav app-header-1" id="header">
+			<a class="mui-action-back mui-icon icon iconfont icon-return mui-pull-left"></a>
+			<h1 class="mui-title">消息中心</h1>
+		</header>
+		
+		<div id="content" class="mui-content mui-scroll-wrapper">
+			<div class="mui-scroll">
+				<!--数据列表-->
+				<div class="notice-list">
+					<div class="item">
+						<div class="time">
+							2019.6.1 10:46
+						</div>
+						<div class="notice-box">
+							<div class="title">
+								QkBill 更新
+							</div>
+							<div class="desc">
+								优化余额显示。
+							</div>
+						</div>
+					</div>
+
+					<div class="item">
+						<div class="time">
+							2019.5.29 23:08
+						</div>
+						<div class="notice-box">
+							<div class="title">
+								QkBill 更新
+							</div>
+							<div class="desc">
+								优化ETH网络gas价格设置。
+							</div>
+						</div>
+					</div>
+					<div class="item">
+						<div class="time">
+							2019.3.28 12:00
+						</div>
+						<div class="notice-box">
+							<div class="title">
+								QkBill 更新
+							</div>
+							<div class="desc">
+								新版QkBill支持CCT,优化首页资产余额显示！
+							</div>
+						</div>
+					</div>
+					<div class="item">
+						<div class="time">
+							2018.12.20 11:34
+						</div>
+						<div class="notice-box">
+							<div class="title">
+								QkBill 1.0发布
+							</div>
+							<div class="desc">
+								QkBill 1.0正式发布，支持QKI、CZT，以及支持多钱包管理及钱包备份等功能。
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+			
+	</body>
+	<script src="../../js/mui.min.js"></script>
+	<script src="../../js/immersed.js"></script>
+	<script src="../../js/h.min.js"></script>
+	<script src="../../js/vue.min.js"></script>
+	<script src="../../js/app.js"></script>
+	
+	<script>
+		mui.init({
+			pullRefresh: {
+				container: '#content',
+				up: {
+					auto:true,
+					contentrefresh: ' ',
+					callback: pullupRefresh,
+					contentnomore:''
+					
+				}
+			}
+		});
+		
+		var count = 0;
+		function pullupRefresh() {
+			setTimeout(function() {
+				mui('#content').pullRefresh().endPullupToRefresh(true);
+			}, 1500);
+		}
+
+		
+	</script>
+</html>

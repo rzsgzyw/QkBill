@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../../css/mui.min.css">
+		<link rel="stylesheet" href="../../css/app.css">
+		<link rel="stylesheet" href="../../fonts/iconfont.css">
+	</head>
+	<body>
+		
+		<header class="mui-bar mui-bar-nav app-header-1" id="header">
+			<a class="mui-action-back mui-icon icon iconfont icon-return mui-pull-left"></a>
+		</header>
+		
+		<nav class="mui-bar mui-bar-tab button-bar">
+			<button type="button" class="create-wallet-btn mui-btn mui-btn-block" id="next-btn">下一步</button>
+		</nav>
+		
+		<div class="mui-content" id="content">
+			
+			<div class="title-bar-1">
+				<span class="mui-pull-left title">创建个人钱包</span>
+			</div>
+			
+			<div class="create-wallet-tip">
+				
+				<span class="mui-icon icon iconfont icon-unlock_fill mui-pull-left"></span>
+				<div class="inner mui-pull-left">
+					设定你的钱包ID，它只是你本地钱包的一个标识，支持字母，数字和下划线，仅能以字母开头，一旦设定不可修改。
+				</div>
+				
+			</div>
+			
+			<div class="create-wallet-box">
+				
+				<form class="mui-input-group">
+					<div class="mui-input-row item">
+						<p class="title">个人钱包ID</p>
+						<input type="text" id="wallet-name" placeholder="请输入6到20位字符,以字母开头">
+					</div>
+				</form>
+				
+			</div>
+			
+			
+		</div>
+		
+	</body>
+	<script src="../../js/mui.min.js"></script>
+	<script src="../../js/immersed.js"></script>
+	<script src="../../js/h.min.js"></script>
+	<script src="../../js/app.js"></script>
+	<script src="../../js/ethers.min.js"></script>
+	
+	<script>
+		mui.init({
+			swipeBack:true //启用右滑关闭功能
+		});
+		
+		var accounts = [];
+		mui.plusReady(function() {
+			
+			accounts = plus.storage.getItem('accounts');
+			if(!accounts)
+			{
+				accounts = new Array();
+			}
+			else
+			{
+				accounts = JSON.parse(accounts);
+			}
+			
+		})
+		
+		
+		
+		h("#next-btn").tap(function(){
+			
+			var wallet_name = document.getElementById("wallet-name").value;
+			if(wallet_name.length < 6 || wallet_name.length > 20)
+			{
+				mui.toast("钱包ID长度为6到20位");
+				return false;
+			}
+			
+			
+			var exists = false;
+			for(var i in accounts)
+			{
+				if(wallet_name == accounts[i].wallet_name )
+				{
+					exists = true;
+					break;
+				}
+			}
+			if(exists == true)
+			{
+				mui.toast("你已使用过此钱包ID");
+				return false;
+			}
+			
+			mui.openWindow({
+				url: "create-wallet-password.html",
+				id: "create-wallet-password.html",
+				extras:{
+					wallet_name:wallet_name
+				},
+				show:{
+					autoShow:true,
+					aniShow:'slide-in-right',
+				},
+				waiting:{
+					autoShow:false,
+				}
+			});
+	
+		});
+	</script>
+</html>

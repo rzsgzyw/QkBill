@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>quark-bill</title>
+		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../../css/mui.min.css">
+		<link rel="stylesheet" href="../../css/app.css">
+		<link rel="stylesheet" href="../../fonts/iconfont.css">
+	</head>
+	<body>
+		
+		<header class="mui-bar mui-bar-nav app-header-1" id="header">
+			<a class="mui-action-back mui-icon icon iconfont icon-return mui-pull-left"></a>
+			<h1 class="mui-title">接收</h1>
+		</header>
+		
+		<div class="mui-content" id="content" v-cloak>
+			
+			<div class="receive-send-box">
+				
+				<div class="assets-name">
+					{{assets_name}}
+				</div>
+				
+				<div class="wallet">
+					接收钱包 <span>{{wallet_name}}</span>
+				</div>
+				
+				<div class="address-box" id="address-box">
+					
+					<div class="address">
+						{{address}}
+					</div>
+					<div class="qrcode" id="qrcode">
+						
+					</div>
+					
+				</div>
+				
+			</div>
+			
+		</div>
+		
+	</body>
+	<script src="../../js/mui.min.js"></script>
+	<script src="../../js/immersed.js"></script>
+	<script src="../../js/h.min.js"></script>
+	<script src="../../js/vue.min.js"></script>
+	<script src="../../js/qrcode.min.js"></script>
+	<script src="../../js/app.js"></script>
+	
+	<script>
+		mui.init({
+			swipeBack:true //启用右滑关闭功能
+		});
+		
+		mui.plusReady(function() {
+			
+			var self = plus.webview.currentWebview();
+			address = self.address;
+			assets_name = self.assets_name;
+			
+			wallet = getWallet(address);
+			
+			vm = new Vue({
+				el: '#content',
+				data: {
+					assets_name:assets_name,
+					wallet_name:wallet.wallet_name,
+					address:address
+				}
+			});
+			
+			// 设置参数方式
+			var qrcode = new QRCode('qrcode', {
+				text: address,
+				width: 256,
+				height: 256,
+				colorDark : '#000000',
+				colorLight : '#ffffff',
+				correctLevel : QRCode.CorrectLevel.H
+			});
+			
+			
+			h("#address-box").tap(function(){
+				if (mui.os.ios) 
+				{
+					var UIPasteboard  = plus.ios.importClass("UIPasteboard");
+					var generalPasteboard = UIPasteboard.generalPasteboard();
+					// 设置/获取文本内容:
+					generalPasteboard.setValueforPasteboardType(address, "public.utf8-plain-text");
+					var value = generalPasteboard.valueForPasteboardType("public.utf8-plain-text");
+					mui.toast("地址已复制")
+				}
+				else
+				{
+					var Context = plus.android.importClass("android.content.Context");
+					var main = plus.android.runtimeMainActivity();
+					var clip = main.getSystemService(Context.CLIPBOARD_SERVICE);
+					plus.android.invoke(clip,"setText",address);
+					mui.toast("地址已复制")
+				}
+			});
+		})
+		
+	</script>
+</html>
