@@ -12,7 +12,7 @@
 支持 QuarkBlockChain, ETH 上的所有加密资产。
 </div>
 
---------
+![bg](./images/bg.png)
 
 [English](./README.md) | [简体中文](./README-zh_CN.md)
 
@@ -29,9 +29,9 @@
 4.去中心化，本地管理私钥，更安全。
 
 ## 🖥 支持的环境
-|  iOS | Web  | Andorid  |
-|  ----  | ----  |----  |
-| ✅  | ✅  |✅  |
+| iOS | Web | Andorid |
+| --- | --- | ------- |
+| ✅   | ✅   | ✅       |
 
 ## 💡即将上线
 

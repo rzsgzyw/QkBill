@@ -7,28 +7,28 @@
 
 <div align="center">
 
-a Decentralized wallet developed by hybrid technology   
+A Decentralized wallet developed by hybrid technology   
 
 Support Quarkblockchain and Ethereum
 
 </div>
 
---------
+![bg](./images/bg.png)
 
 [English](./README.md) | [简体中文](./README-zh_CN.md)
 
 ## ✨Features
 
 - Support Ethereum and Quarkblockchain.
-- Support multiple cryptocurrencies
+- Support multiple cryptocurrencies.
 - Support multi wallet.
-- Decentralization,safe and reliable
+- Decentralization,safe and reliable.
 
 ## 🖥 Environment Support
 
-|  iOS | Web  | Andorid  |
-|  ----  | ----  |----  |
-| ✅  | ✅  |✅  |
+| iOS | Web | Andorid |
+| --- | --- | ------- |
+| ✅   | ✅   | ✅       |
 
 
 ## 💡Todo
